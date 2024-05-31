@@ -1,0 +1,6 @@
+*
+!/.gitignore
+!/examples
+!/src
+!*.cr
+!*.md
