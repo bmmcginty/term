@@ -6,14 +6,11 @@ class LinuxTerminal < Terminal
 getter! input_channel, tty
 
 def getkey()
-Log.info {"getkey"}
 t=input_channel.receive
-Log.info {"ipr #{t}"}
 if t!=27
 return read_utf8 t
 end
 spc=read_special t
-Log.info {"spec #{spc}"}
 if spc.is_a?(Symbol)
 return spc
 end
@@ -92,7 +89,6 @@ out+=type.chr
 while t=input_channel.receive
 pos+=1
 out+=t.chr
-Log.info {"out #{out.inspect}"}
 if 0x40 <= t <= 0x7e
 break
 end #if
@@ -165,7 +161,6 @@ set_default_keys
 end
 
 def run
-Log.info {"get size"}
 # get size
 size
 clear
@@ -201,13 +196,11 @@ end
 private def getpos
 send esc, csi, "6n"
 t=getkey
-Log.info {"getkey got #{t}"}
 if t != :special
 raise Exception.new("no response received for curpos")
 end
 s=@unprocessable.delete_at 0
 s=s[1..-2]
-Log.info {"s #{s}"}
 s.split(";").map &.to_i
 end
 
@@ -215,7 +208,6 @@ def size
 if @init
 return {x: @maxx, y: @maxy}
 end
-Log.info {"getpos"}
 move 1000,1000
 y,x=getpos
 move 0,0

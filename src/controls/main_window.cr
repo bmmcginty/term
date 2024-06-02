@@ -20,16 +20,12 @@ control.focus
 end
 
 def initialize
-Log.info {".read_keys"}
 read_keys
-Log.info {".run"}
 @term.run
 t=@term.size
-Log.info {"size #{t}"}
 @height=t[:y]
 @width=t[:x]
 Process.on_terminate do |reason|
-Log.info {"reason #{reason}"}
 terminate
 end
 at_exit do |reason, exc|
@@ -39,7 +35,6 @@ end
 end
 
 def terminate
-Log.info {"terminating"}
 @term.done
 Process.exit
 end
@@ -64,7 +59,6 @@ idx+=1
 if idx==ac.size
 idx=1
 end
-Log.info {"ac #{ac} new idx #{idx}"}
 self.active_control=ac[idx]
 refresh
 when 17.chr
@@ -118,10 +112,8 @@ def read_keys
 tmp=Channel(Int32).new(1)
 spawn do
 tmp.send 0
-Log.info {"read keys"}
 while 1
 t=STDIN.read_byte.not_nil!
-Log.info {"read_keys received #{t} #{t.chr.inspect}"}
 @term.input_channel.send t
 end #while
 end #spawn
