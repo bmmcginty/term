@@ -1,24 +1,22 @@
 require "./control"
 
 class StaticTextControl < Control
-@text : String
+  @text : String
 
-getter text
+  getter text
 
-def text=(@text)
-@dirty=true
-end # def
+  def text=(@text)
+    @dirty = true
+  end # def
 
-def initialize(@text, @height=nil, @width=nil)
-end
+  def initialize(@text, @height = nil, @width = nil)
+  end
 
-def focusable?
-true
-end
+  def focusable?
+    true
+  end
 
-def key(k)
-:continue
-end
-
+  def key(k)
+    :continue
+  end
 end # class
-

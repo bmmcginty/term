@@ -14,9 +14,7 @@ class IO::FileDescriptor < IO
   def raw! : Nil
     system_raw!(true) { return }
   end
-
 end
-
 
 module Crystal::System::FileDescriptor
   private def system_console_mode!(&)
@@ -52,6 +50,4 @@ module Crystal::System::FileDescriptor
       yield
     end
   end
-
 end
-
