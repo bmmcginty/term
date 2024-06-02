@@ -80,7 +80,25 @@ end
 def handle_refresh
 spawn do
 while @refresh_channel.receive
+begin
 do_refresh
+rescue e
+Log.info {"error during do_refresh\n#{e.inspect_with_backtrace}"}
+end
+end # while
+end # spawn
+sleep 0
+end # def
+
+def react_to_keys
+spawn do
+while 1
+t=@term.getkey
+begin
+handle_key t
+rescue e
+Log.info {"error during handle_key\n#{e.inspect_with_backtrace}"}
+end # rescue
 end # while
 end # spawn
 sleep 0
@@ -98,18 +116,8 @@ t=t.parent?
 end
 end # def
 
-def react_to_keys
-spawn do
-while 1
-t=@term.getkey
-handle_key t
-end # while
-end # spawn
-sleep 0
-end # def
-
 def read_keys
-tmp=Channel(Int32).new(1)
+tmp=Channel(Int32).new
 spawn do
 tmp.send 0
 while 1
@@ -144,10 +152,19 @@ all_children.each do |c|
 if ! c.dirty
 next
  end # if
+line_num=0
 c.text.split("\n").each_with_index do |line, idx|
 @term.move c.y+idx,c.x
 @term.write line.ljust(c.width, ' ')
+line_num=idx
 end # each line
+# todo: maybe text should handle this?
+# clear any lines that weren't returned by text
+while line_num+1<c.height
+line_num+=1
+@term.move c.y+line_num,c.x
+@term.write "".ljust(c.width, ' ')
+end
 c.dirty=false
 end # each child
 @term.move y: active_control.y+active_control.user_y, x: active_control.x+active_control.user_x
