@@ -2,5 +2,6 @@
 !/.gitignore
 !/examples
 !/src
+!/src/controls
 !*.cr
 !*.md
