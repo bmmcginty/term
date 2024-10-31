@@ -12,7 +12,7 @@ def main
   while 1
     clock.text = Time.local.to_s("%H:%M:%S")
     w.refresh
-    sleep 1
+    sleep 1.seconds
   end
 end
 

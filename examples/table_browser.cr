@@ -1,9 +1,35 @@
 require "../src/term"
 
+enum Mode
+  None
+  Table
+  Row
+end
+
 class FileListControl < ListControl
-  @path : String
-  @positions = Hash(String, Int32).new
-  @entries = Hash(String, Array(String)).new
+  @tables = [] of String
+  @cols = [] of String
+  @data = [] of Array(String)
+  @mode = Mode::None
+
+  def key(k)
+    refresh = false
+    refresh = if k == 8.chr || k == 127.chr
+                level_up
+              elsif k == 13.chr
+                level_down
+              elsif k == :left
+                prev_column
+              elsif k == :right
+                next_column
+              else
+                return super
+              end
+    if refresh
+      @dirty = true
+      self.parent.as(MainWindow).refresh
+    end
+  end
 
   def pos=(v : Int32)
     @positions[@path] = v
@@ -17,32 +43,29 @@ class FileListControl < ListControl
     @entries[@path]
   end
 
-  action def backspace
+  def back
     p = File.dirname(@path)
     Log.info { "changing from #{@path} to #{p}" }
-    if p == @path
-      @dirty = false
-      return
-    end
     if !@entries[p]?
       Log.info { "adding #{p}" }
       add p
     end
     @path = p
+    true
   end
 
-  action def enter
+  def enter
     v = pos
     child = @entries[@path][v]
     p = @path + "/" + child
     if !File.directory?(File.realpath(p))
-      @dirty = false
       return
     end
     if !@entries[p]?
       add p
     end
     @path = p
+    true
   end
 
   def add(p)
@@ -59,12 +82,8 @@ class FileListControl < ListControl
 end
 
 a = MainWindow.new
-frame = Frame.new
-a.add frame
 lb = FileListControl.new height: 20
-frame.add lb
-# wz=KeyWizard.new height: 20
-# frame.add wz, y: 0
+a.add lb
 a.run
 a.refresh
 sleep
