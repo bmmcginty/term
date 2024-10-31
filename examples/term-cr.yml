@@ -1,0 +1,15 @@
+# rename to ~/.term-cr.yml
+all:
+# exits any app
+  quit: 'ctrl-q'
+  backspace: backspace
+  list-down: down
+  list-up: up
+  tree-collapse: left
+  tree-expand: right
+  prev-char: left
+  next-char: right
+  select-item: enter
+# can override keystrokes when running a binary named fm
+fm:
+  rename: f2
