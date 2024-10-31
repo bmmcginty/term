@@ -31,7 +31,7 @@ class FileListControl < ListControl
     @path = p
   end
 
-  action def enter
+  action def select_item
     v = pos
     child = @entries[@path][v]
     p = @path + "/" + child
