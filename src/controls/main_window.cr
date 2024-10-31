@@ -1,18 +1,15 @@
 require "../linux_terminal"
 require "./control"
+require "yaml"
 
 class MainWindow < Control
   @active_control : Control? = nil
   @term = LinuxTerminal.new
   @refresh_channel = Channel(Int32).new
+  @keys = Hash(String, Array(String)).new
 
   getter! active_control
-
-  # todo: remove this and change to
-  # use #key and #string
-  def unprocessable
-    @term.unprocessable
-  end
+  getter keys
 
   def active_control=(control : Control)
     @active_control = control
@@ -20,7 +17,11 @@ class MainWindow < Control
   end
 
   def initialize
+    @main_window = self
+    load_keys
     read_keys
+    # bind keys for main window (because we don't "add" our self)
+    bind_keys
     @term.run
     t = @term.size
     @height = t[:y]
@@ -39,40 +40,78 @@ class MainWindow < Control
     Process.exit
   end
 
+  def load_keys
+    path = Path["~/.term-cr.yml"].expand(home: true)
+    if !File.exists?(path)
+      File.write(path, "all:\n  exit: ctrl-q")
+    end
+    y = YAML.parse(File.read(path))
+    proc = File.basename(Process.executable_path.not_nil!)
+    add_keys y["all"]
+    if y[proc]?
+      add_keys y[proc]
+    end
+    sort_keys
+  end # def
+
+  def sort_keys
+    @keys.each do |k, v|
+      v.reverse!
+    end
+  end # def
+
+  def add_keys(keys)
+    keys.as_h.each do |k, v|
+      k = k.as_s.gsub("-", "_")
+      v = v.as_s
+      if v == "nil"
+        @keys.delete k
+      end
+      if !@keys[v]?
+        @keys[v] = [] of String
+      end
+      @keys[v] << k
+    end # each
+  end   # def
+
+  # MainWindow is not directly interactive, though being the top-level parent,
+  # it does see keystrokes.
   def focusable?
     false
   end
 
+  # MainWindow holds other controls so has no text of it's own.
   def text
     ""
   end
 
   def focus
+    raise Exception.new("MainWindow can not be the active control")
   end
 
-  def key(k)
-    case k
-    when '\t'
-      ac = all_children.to_a
-      idx = ac.index(active_control).not_nil!
-      idx += 1
-      if idx == ac.size
-        idx = 1
-      end
-      self.active_control = ac[idx]
-      refresh
-    when 17.chr
-      Log.info { "exitting" }
-      exit
-      # Process.kill Process.pid
-    end # select
-  end   # def
+  # Sets focus to the nearest child/sibling control.
+  action def next_control
+    ac = all_children.to_a
+    idx = ac.index(active_control).not_nil!
+    idx += 1
+    if idx == ac.size
+      idx = ac.index(ac.select { |i| i.focusable? }[0]).not_nil!
+    end
+    self.active_control = ac[idx]
+  end
+
+  # exit the program.
+  # Not named exit because that is a crystal kernel method.
+  action def quit
+    Log.info { "exitting" }
+    exit
+  end
 
   def run
     if children.size == 0
       raise Exception.new("main window must have children")
     end
-    self.active_control = children[0]
+    self.active_control = all_children.select { |i| i.focusable? }[0]
     react_to_keys
     handle_refresh
   end
@@ -87,7 +126,7 @@ class MainWindow < Control
         end
       end # while
     end   # spawn
-    sleep 0
+    sleep 0.seconds
   end # def
 
   def react_to_keys
@@ -101,21 +140,33 @@ class MainWindow < Control
         end # rescue
       end   # while
     end     # spawn
-    sleep 0
+    sleep 0.seconds
   end # def
 
+  # modeled after bubbling events in web browsers.
+  # Send the key to the currently active control, and continue sending it up the control's parents, so long as each control returns :continue.
+  # If any control sets it's dirty flag, trigger a refresh.
   def handle_key(k)
-    Log.info { "handle_key #{k}" }
     t = active_control
-    while t
-      v = t.key k
-      if v != :continue
-        break
-      end
-      t = t.parent?
+    Log.info { "handle_key #{k} active control #{t}" }
+    need_refresh = false
+    total = 0.seconds
+    while c = t
+      Log.info { "c #{c}" }
+      start = Time.monotonic
+      rv = c.key k
+      stop = Time.monotonic
+      total += (stop - start)
+      Log.info { "#{c} dirty? #{c.dirty}" }
+      need_refresh = true if c.dirty
+      break if rv != :continue
+      t = c.parent?
     end
+    refresh if need_refresh
+    Log.info { "time #{total}" }
   end # def
 
+  # Keys are processed in their own fiber.
   def read_keys
     tmp = Channel(Int32).new
     spawn do
@@ -125,7 +176,7 @@ class MainWindow < Control
         @term.input_channel.send t
       end # while
     end   # spawn
-    sleep 0
+    sleep 0.seconds
     tmp.receive
   end # def
 
@@ -147,13 +198,16 @@ class MainWindow < Control
     @refresh_channel.send 0
   end
 
+  # repaints the screen.
   def do_refresh
     all_children.each do |c|
       if !c.dirty
+        Log.info { "skipping refresh for #{c} because dirty is false" }
         next
       end # if
       line_num = 0
       c.text.split("\n").each_with_index do |line, idx|
+        Log.info { "moving to c.y #{c.y} idx #{idx} pos #{c.y + idx}" }
         @term.move c.y + idx, c.x
         @term.write line.ljust(c.width, ' ')
         line_num = idx
@@ -167,7 +221,9 @@ class MainWindow < Control
       end
       c.dirty = false
     end # each child
-    @term.move y: active_control.y + active_control.user_y, x: active_control.x + active_control.user_x
+    loc = {active_control.y + active_control.user_y, active_control.x + active_control.user_x}
+    Log.info { "moving to #{loc[0]},#{loc[1]}" }
+    @term.move y: loc[0], x: loc[1]
   end # def
 
 end # class

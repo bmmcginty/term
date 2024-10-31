@@ -1,11 +1,17 @@
 class Log
   @@fh = File.open("#{File.basename(File.realpath("/proc/self/exe"))}.log", "wb")
   @@c = Channel(String).new
+  @@log_info = false
+
+  def self.enable_info
+    @@log_info = true
+  end
 
   def self.info(&block : (-> String))
+    return if !@@log_info
     t = block.call
     @@c.send t
-    sleep 0
+    sleep 0.seconds
   end
 
   def self.run
@@ -17,9 +23,10 @@ class Log
         @@fh.flush
       end
     end
-    sleep 0
+    sleep 0.seconds
     t.receive
   end # def
 
 end # class
+
 Log.run

@@ -1,6 +1,14 @@
+class LoggingChannel < Channel(UInt8)
+  def receive
+    t = super
+    Log.info { "receive #{t}" }
+    t
+  end
+end
+
 abstract class Terminal
   @init = false
-  @input_channel = Channel(UInt8).new
+  @input_channel = LoggingChannel.new
   @keys = Hash(UInt64, Symbol).new
   @maxy : Int32? = nil
   @maxx : Int32? = nil

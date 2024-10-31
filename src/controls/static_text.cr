@@ -15,8 +15,4 @@ class StaticTextControl < Control
   def focusable?
     true
   end
-
-  def key(k)
-    :continue
-  end
 end # class
