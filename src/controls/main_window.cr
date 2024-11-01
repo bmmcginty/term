@@ -92,11 +92,21 @@ class MainWindow < Control
   # Sets focus to the nearest child/sibling control.
   action def next_control
     ac = all_children.to_a
-    idx = ac.index(active_control).not_nil!
+    cur = ac.index(active_control).not_nil!
+idx=cur
+while 1
     idx += 1
-    if idx == ac.size
-      idx = ac.index(ac.select { |i| i.focusable? }[0]).not_nil!
-    end
+if idx==cur
+@dirty=false
+return
+end
+if idx==ac.size
+idx=-1
+next
+end
+next if ! ac[idx].focusable?
+break
+end
     self.active_control = ac[idx]
   end
 
@@ -205,24 +215,11 @@ class MainWindow < Control
         Log.info { "skipping refresh for #{c} because dirty is false" }
         next
       end # if
-      line_num = 0
-      c.text.split("\n").each_with_index do |line, idx|
-        Log.info { "moving to c.y #{c.y} idx #{idx} pos #{c.y + idx}" }
-        @term.move c.y + idx, c.x
-        @term.write line.ljust(c.width, ' ')
-        line_num = idx
-      end # each line
-      # todo: maybe text should handle this?
-      # clear any lines that weren't returned by text
-      while line_num + 1 < c.height
-        line_num += 1
-        @term.move c.y + line_num, c.x
-        @term.write "".ljust(c.width, ' ')
-      end
+c.paint @term
       c.dirty = false
     end # each child
     loc = {active_control.y + active_control.user_y, active_control.x + active_control.user_x}
-    Log.info { "moving to #{loc[0]},#{loc[1]}" }
+    Log.info { "moving to #{loc[0]},#{loc[1]} for #{active_control}" }
     @term.move y: loc[0], x: loc[1]
   end # def
 

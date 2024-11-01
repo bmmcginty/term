@@ -1,4 +1,4 @@
-class Frame < Control
+class FrameControl < Control
   def focusable?
     false
   end

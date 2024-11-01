@@ -11,6 +11,14 @@ abstract class ListControl < Control
     true
   end
 
+action def list_top
+self.pos=0
+end
+
+action def list_bottom
+self.pos=items.size-1
+end
+
   action def list_down
     if pos + 1 == items.size
       @dirty = false
@@ -55,7 +63,8 @@ abstract class ListControl < Control
     while 1
       t += 1
       if t == pos
-        break
+@dirty=false
+        return
       end
       if t >= items.size
         t = -1
@@ -82,6 +91,7 @@ abstract class ListControl < Control
   #        end
 
   def text
+Log.info { "pos=#{pos} height=#{height} start=#{(pos//height)*height} stop=#{((pos//height)*height)+height}" }
     start = (pos//height)*height
     stop = start + height
     Log.info { "displaying items #{start}...#{stop} #{items[start...stop]}" }

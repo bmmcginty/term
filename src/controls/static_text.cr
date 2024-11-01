@@ -2,6 +2,7 @@ require "./control"
 
 class StaticTextControl < Control
   @text : String
+@focusable : Bool
 
   getter text
 
@@ -9,10 +10,10 @@ class StaticTextControl < Control
     @dirty = true
   end # def
 
-  def initialize(@text, @height = nil, @width = nil)
+  def initialize(@text, @height = nil, @width = nil, @focusable=true)
   end
 
   def focusable?
-    true
+    @focusable
   end
 end # class

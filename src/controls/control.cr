@@ -91,6 +91,7 @@ abstract class Control
 
   # pass a child control to this method for verification
   def verify(child)
+return if child.is_a?(FrameControl)
     # each of our children (c) must have
     # c.y>=@y
     assert child.y >= self.y
@@ -138,6 +139,23 @@ abstract class Control
     control.bind_keys
     @children << control
   end # def
+
+def paint(term)
+      line_num = 0
+      self.text.split("\n").each_with_index do |line, idx|
+        Log.info { "moving to c.y #{self.y} idx #{idx} pos #{self.y + idx}" }
+        term.move self.y + idx, self.x
+        term.write line.ljust(self.width, ' ')
+        line_num = idx
+      end # each line
+      # todo: maybe text should handle this?
+      # clear any lines that weren't returned by text
+      while line_num + 1 < self.height
+        line_num += 1
+        term.move self.y + line_num, self.x
+        term.write "".ljust(self.width, ' ')
+      end
+end
 
   # For each bindable function, aka action,
   # if that action exists in the keymap,
