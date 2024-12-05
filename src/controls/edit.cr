@@ -3,9 +3,10 @@ require "./static_text"
 class EditControl < Control
   @text : Array(String)
   @pos = 0
+  @focusable : Bool
 
   def focusable?
-    true
+    @focusable
   end
 
   def text=(s : String)
@@ -72,7 +73,7 @@ class EditControl < Control
     @text[start...stop].join("")
   end
 
-  def initialize(text, @height = nil, @width = nil)
+  def initialize(text, @height = nil, @width = nil, @focusable = true)
     @text = Array(String).new initial_capacity: 1024*1024
     @text.concat text.split("")
   end # def
