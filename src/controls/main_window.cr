@@ -90,6 +90,9 @@ class MainWindow < Control
   end
 
   # Sets focus to the nearest child/sibling control.
+  def paint(term)
+  end
+
   action def next_control
     ac = all_children.to_a
     cur = ac.index(active_control).not_nil!
@@ -158,22 +161,21 @@ end
   # If any control sets it's dirty flag, trigger a refresh.
   def handle_key(k)
     t = active_control
-    Log.info { "handle_key #{k} active control #{t}" }
-    need_refresh = false
+    Log.info { "handle_key #{k} active control #{t.class.name}" }
+    need_refresh = true
     total = 0.seconds
     while c = t
-      Log.info { "c #{c}" }
       start = Time.monotonic
       rv = c.key k
       stop = Time.monotonic
       total += (stop - start)
-      Log.info { "#{c} dirty? #{c.dirty}" }
+#      Log.info { "#{c} dirty? #{c.dirty}" }
       need_refresh = true if c.dirty
       break if rv != :continue
       t = c.parent?
     end
     refresh if need_refresh
-    Log.info { "time #{total}" }
+#    Log.info { "time #{total}" }
   end # def
 
   # Keys are processed in their own fiber.
@@ -212,14 +214,14 @@ end
   def do_refresh
     all_children.each do |c|
       if !c.dirty
-        Log.info { "skipping refresh for #{c} because dirty is false" }
+#        Log.info { "skipping refresh for #{c} because dirty is false" }
         next
       end # if
 c.paint @term
       c.dirty = false
     end # each child
     loc = {active_control.y + active_control.user_y, active_control.x + active_control.user_x}
-    Log.info { "moving to #{loc[0]},#{loc[1]} for #{active_control}" }
+    Log.info { "moving to #{loc[0]},#{loc[1]} for #{active_control.class.name}" }
     @term.move y: loc[0], x: loc[1]
   end # def
 

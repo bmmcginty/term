@@ -51,23 +51,18 @@ abstract class Control
   # to prevent extraneous repaints.
   # This is purposefully done for developer productivity.
   def key(k)
-    Log.info { "dispatching #{k} to #{self}" }
+    Log.info { "dispatching #{k} to #{self.class.name}" }
     @dirty = true
     f = @key_to_action[k]?
     ret = if f
-            Log.info { "k #{k} binding #{f}" }
             f.call(self)
           elsif k.size == 1
-            Log.info { "letter #{k}" }
             letter k
           elsif k == "space"
-            Log.info { "letter space" }
             letter " "
           else
-            Log.info { "k #{k} is other" }
             other k
           end # if
-    Log.info { "got ret #{ret}" }
     ret
   end
 
@@ -123,16 +118,15 @@ return if child.is_a?(FrameControl)
 
   # Makes control a child of this one.
   def add(control, x = 0, y = 0)
-    Log.info { "add control #{control}" }
     control.x = @x + x
     control.y = @y + y
-    Log.info { "control.width #{control.width?.inspect} self width #{@width.inspect}" }
     if !control.width?
       control.width = @width
     end
     if !control.height?
       control.height = @height
     end
+    Log.info { "add control #{control.class.name}, height #{control.height} width #{control.width}" }
     control.main_window = self.main_window
     control.parent = self
     verify control
@@ -155,6 +149,7 @@ def paint(term)
         term.move self.y + line_num, self.x
         term.write "".ljust(self.width, ' ')
       end
+term.move self.y+@user_y, self.x+@user_x
 end
 
   # For each bindable function, aka action,
@@ -166,14 +161,14 @@ end
       p = p.parent
     end
     keys = p.as(MainWindow).keys
-    Log.info { "self #{self} keys #{keys} self #{@@name_to_action}" }
     keys.each do |k, vl|
       vl.each do |v|
         m = @@name_to_action[v]?
         if m
+Log.info { "bind key, #{self.class.name}, #{v} to #{k}" }
           @key_to_action[k] = m
-        end # if m
         break
+        end # if m
       end # each vl
     end   # each v
   end     # def
