@@ -42,9 +42,13 @@ class LinuxTerminal < Terminal
     send esc, osc, "0;#{s}", esc, oscts
   end
 
-  def move(y, x)
-    send esc, csi, "#{y + 1};#{x + 1}H"
+  def move(y, x, io=nil)
+    send esc, csi, "#{y + 1};#{x + 1}H", io: io
   end
+
+def clear_to_end_of_line(io=nil)
+    send esc, csi, "K", io: io
+end
 
   def clear
     send esc, csi, "2J"
@@ -96,7 +100,7 @@ class LinuxTerminal < Terminal
     '\\'
   end
 
-  def send(*things)
-    tty << things.map(&.to_s).join("")
+  def send(*things, io=nil)
+    (io ? io : tty) << things.map(&.to_s).join("")
   end
 end
