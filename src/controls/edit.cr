@@ -4,6 +4,7 @@ class EditControl < Control
   @text : Array(String)
   @pos = 0
   @focusable : Bool
+  @prompt=""
 
   def focusable?
     @focusable
@@ -55,14 +56,14 @@ class EditControl < Control
 
   def user_x
     # chunk=@pos/width
-    @pos % width
+    @prompt.size+(@pos % width)
   end
 
   def text
-    w = width
+    w = width-@prompt.size
     # chunks will be zero based (0 for 0-39, 1 for 40-79, ...)
     if @text.size <= w
-      return @text.join("")
+      return @prompt+@text.join("")
     end
     start = 0
     stop = w
@@ -70,10 +71,10 @@ class EditControl < Control
       start += w
       stop += w
     end
-    @text[start...stop].join("")
+    @prompt+@text[start...stop].join("")
   end
 
-  def initialize(text, @height = nil, @width = nil, @focusable = true)
+  def initialize(text, @height = nil, @width = nil, @focusable = true, @prompt = "")
     @text = Array(String).new initial_capacity: 1024*1024
     @text.concat text.split("")
   end # def
