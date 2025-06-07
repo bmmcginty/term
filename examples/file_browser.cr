@@ -6,14 +6,17 @@ class FMInput < EditControl
   @fl : FileListControl? = nil
   @call : Proc(String, Nil)? = nil
 
-  def activate(fl : FileListControl, &block : (String -> Nil))
+  def activate(fl : FileListControl, prompt, start=nil, &block : (String -> Nil))
+self.text=(start ? start : "")
+@prompt=prompt
+@pos=start ? start.size : 0
     @call = block
     @fl = fl
     main_window.active_control = self
   end
 
   action def insert_line
-    @call.not_nil!.call self.text
+    @call.not_nil!.call self.text[@prompt.size..-1]
     main_window.active_control = @fl.not_nil!
   end
 end
@@ -29,9 +32,33 @@ class FileListControl < ListControl
   @entries = Hash(String, Array(String)).new
   @filter = ""
 
-  def path=(s)
-    @path = s
+  def path=(p)
+    if p == @path
+      @dirty = false
+      return
+    end
+p=File.expand_path p, dir: @path
+    if !File.directory?(p)
+      @dirty = false
+      return
+    end
+    Log.info { "changing from #{@path} to #{p}" }
+    if !@entries[p]?
+      Log.info { "adding #{p}" }
+      hydrate p
+    end
+    @path = p
     set_name?
+  end
+
+  action def go
+    if !@edit_control
+      @dirty = false
+      return
+    end
+    @edit_control.not_nil!.activate self, "go:", @path do |i|
+      self.path=File.expand_path(i, home: true)
+    end
   end
 
   action def activate_filter
@@ -39,9 +66,42 @@ class FileListControl < ListControl
       @dirty = false
       return
     end
-    @@action = "filter"
-    @edit_control.not_nil!.activate self do |i|
+@dirty=false
+    @edit_control.not_nil!.activate self, "filter:", @filter do |i|
+Log.info { "setting filter to `#{i}`" }
+@dirty=true
       @filter = i
+    end
+  end
+
+  action def mkdir
+    if !@edit_control
+      @dirty = false
+      return
+    end
+    @edit_control.not_nil!.activate self, "mkdir:" do |i|
+begin
+      Dir.mkdir @path+"/"+i
+hydrate @path
+idx=real_items.index(i)
+self.pos=idx ? idx : pos.clamp(0,real_items.size-1)
+rescue e
+self.set_status e.to_s
+end # rescue
+    end # do
+  end # def
+
+  action def rename
+    if !@edit_control
+      @dirty = false
+      return
+    end
+    old=real_items[self.pos]
+    @edit_control.not_nil!.activate self, "rename:", old do |i|
+      File.rename @path+"/"+old, @path+"/"+i
+hydrate @path
+idx=real_items.index(i)
+self.pos= idx ? idx : pos.clamp(0,real_items.size-1)
     end
   end
 
@@ -96,6 +156,10 @@ class FileListControl < ListControl
     @@clipboard.clear
   end # def
 
+def trash_dir
+Path["~/trash"].expand(home: true)
+end
+
   def handle_clipboard(i)
     opath = i
     npath = "#{@path}/#{File.basename(opath)}"
@@ -103,6 +167,10 @@ class FileListControl < ListControl
       `mv "#{opath}" "#{npath}"`
     elsif @@action == "copy"
       `cp -R "#{opath}" "#{npath}"`
+elsif action=="trash"
+dn=trash_dir/File.dirname(i)
+Dir.mkdir_p dn
+`mv "#{i}" "#{dn}/#{Dir.basename(i)}"`
     else
     end
     srcdir = File.dirname(i)
@@ -116,8 +184,8 @@ class FileListControl < ListControl
 
   def focus
     set_name?
-    if self.pos >= @entries[@path].size
-      self.pos = @entries[@path].size - 1
+    if self.pos >= real_items.size && self.pos>0
+      self.pos = real_items.size-1
     end
     super
   end
@@ -130,9 +198,12 @@ class FileListControl < ListControl
 
   def set_name?
     if @name_control
-      @name_control.not_nil!.text = File.basename(@path)
-    end
-  end
+bn=File.basename(@path)
+if @name_control.not_nil!.text != bn
+      @name_control.not_nil!.text = bn
+end # if 
+    end # if
+  end # def
 
   def pos=(v : Int32)
     @positions[@path] = v
@@ -152,39 +223,23 @@ class FileListControl < ListControl
   end
 
   def items : Iterable
-    t = real_items.dup
+    t = real_items
     if @@clipboard.size > 0
-      t.map! { |i| i + (@@clipboard.includes?(@path + "/" + i) ? "*" : "") }
-    end
-    t
-  end
+      t.map { |i| i + (@@clipboard.includes?(@path + "/" + i) ? "*" : "") }
+else
+t
+    end # if
+  end # def
 
   action def backspace
     p = File.dirname(@path)
-    Log.info { "changing from #{@path} to #{p}" }
-    if p == @path
-      @dirty = false
-      return
-    end
-    if !@entries[p]?
-      Log.info { "adding #{p}" }
-      hydrate p
-    end
-    self.path = p
+self.path=p
   end
 
   action def select_item
-    v = pos
-    child = @entries[@path][v]
+    child = real_items[self.pos]
     p = @path + "/" + child
-    if !File.directory?(File.realpath(p))
-      @dirty = false
-      return
-    end
-    if !@entries[p]?
-      hydrate p
-    end
-    self.path = p
+self.path=p
   end
 
   def hydrate(p)
@@ -211,8 +266,8 @@ class FileListControl < ListControl
   end
 
   def initialize(@height = nil, @name_control = nil, @status_control = nil, @edit_control = nil)
-    hydrate Dir.current
-    @path = Dir.current
+@path=""
+self.path=Dir.current
   end
 end
 
