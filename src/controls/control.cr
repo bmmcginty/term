@@ -136,8 +136,9 @@ return if child.is_a?(FrameControl)
 
 def paint(term)
       line_num = 0
-      self.text.split("\n").each_with_index do |line, idx|
-        Log.info { "moving to c.y #{self.y} idx #{idx} pos #{self.y + idx}" }
+      t=self.text.split("\n")
+Log.info { "painting #{t}" }
+t.each_with_index do |line, idx|
         term.move self.y + idx, self.x
         term.write line.ljust(self.width, ' ')
         line_num = idx
