@@ -30,12 +30,34 @@ end
     #    end
   end
 
+  action def list_jump_down
+    if pos + 20 >= items.size
+      @dirty = false
+      return
+    end
+    self.pos += 20
+    #    if user_y == 0
+    #      return true
+    #    end
+  end
+
   action def list_up
     if pos == 0
       @dirty = false
       return
     end
     self.pos -= 1
+    #    if user_y == height - 1
+    #      return true
+    #    end
+  end
+
+  action def list_jump_up
+    if pos < 20
+      @dirty = false
+      return
+    end
+    self.pos -= 20
     #    if user_y == height - 1
     #      return true
     #    end
@@ -91,9 +113,9 @@ end
   #        end
 
   def text
-Log.info { "pos=#{pos} height=#{height} start=#{(pos//height)*height} stop=#{((pos//height)*height)+height}" }
     start = (pos//height)*height
     stop = start + height
+Log.info { "pos=#{pos} height=#{height} start=#{start} stop=#{stop} items.size=#{items.size}" }
     Log.info { "displaying items #{start}...#{stop} #{items[start...stop]}" }
     items[start...stop].map(&.to_s).join("\n")
   end
