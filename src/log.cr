@@ -14,6 +14,12 @@ class Log
     sleep 0.seconds
   end
 
+  def self.error(&block : (-> String))
+    t = block.call
+    @@c.send t
+    sleep 0.seconds
+  end
+
   def self.run
     t = Channel(Int32).new
     spawn do
