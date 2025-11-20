@@ -1,0 +1,13 @@
+name: term
+version: 0.1.0
+
+authors:
+  - Brandon McGinty <bmmcginty@bmcginty.us> - Tyler Spivey <tspivey@pcdesk.net>
+
+license: MIT
+
+crystal: '>= 1.17'
+
+dependencies:
+  libtermkey-cr:
+    github: 'bmmcginty/libtermkey-cr'
