@@ -61,8 +61,9 @@ class MainWindow < Control
   end # def
 
   def add_keys(keys)
-    keys.as_h.each do |k, v|
+    keys.as_h.each do |k, vl|
       k = k.as_s.gsub("-", "_")
+(vl.as_s? ? [vl] : vl.as_a).each do |v|
       v = v.as_s
       if v == "nil"
         @keys.delete k
@@ -71,6 +72,7 @@ class MainWindow < Control
         @keys[v] = [] of String
       end
       @keys[v] << k
+end # each
     end # each
   end   # def
 
@@ -135,7 +137,7 @@ end
         begin
           do_refresh
         rescue e
-          Log.info { "error during do_refresh\n#{e.inspect_with_backtrace}" }
+          Log.error { "error during do_refresh\n#{e.inspect_with_backtrace}" }
         end
       end # while
     end   # spawn
@@ -149,7 +151,7 @@ end
         begin
           handle_key t
         rescue e
-          Log.info { "error during handle_key\n#{e.inspect_with_backtrace}" }
+          Log.error { "error during handle_key\n#{e.inspect_with_backtrace}" }
         end # rescue
       end   # while
     end     # spawn
