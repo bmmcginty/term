@@ -13,17 +13,22 @@ Log.info { "~ set text to #{t}" }
     @dirty = true
   end # def
 
-def wrap(text, max_length)
+def wrap(text, len)
 ret=[] of String
-while text.size>max_length
-where=text[0...max_length].rindex(/\s+/)
-where = where ? where : max_length
-ret << text[0...where]
-text=text[where..-1]
-end
-ret << text if text.size>0
+t=text
+while t.size>len
+pos=t.rindex(/[\n ]/,len)
+if pos
+ret << t[0...pos]
+t=t[pos+1..-1]
+else
+ret << t[0...len]
+t=t[len..-1]
+end # if
+end # while
+ret << t
 ret
-end
+end # def
 
 action def next_line
 if @user_y>=self.height-1
