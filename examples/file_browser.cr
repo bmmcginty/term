@@ -167,10 +167,10 @@ end
       `mv "#{opath}" "#{npath}"`
     elsif @@action == "copy"
       `cp -R "#{opath}" "#{npath}"`
-elsif action=="trash"
+elsif @@action=="trash"
 dn=trash_dir/File.dirname(i)
 Dir.mkdir_p dn
-`mv "#{i}" "#{dn}/#{Dir.basename(i)}"`
+`mv "#{i}" "#{dn}/#{File.basename(i)}"`
     else
     end
     srcdir = File.dirname(i)
